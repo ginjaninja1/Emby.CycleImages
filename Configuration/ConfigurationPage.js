@@ -4,12 +4,12 @@ define([
     ],
     function(loading, dialogHelper, mainTabsManager) {
 
-        const pluginId = "DD652519-2D16-46C4-B5B5-D697FBCF425C";
+        const pluginId = "600FF041-1129-441F-82D9-D3943F22C7BE";
 
         function getTabs() {
             return [{
                     href: Dashboard.getConfigurationPageUrl('ConfigurationPage'),
-                    name: 'Guest Star Cleaner'
+                    name: 'Cycle Images Configuration'
                 }
                 /*,
                                 {
@@ -26,7 +26,8 @@ define([
 
             ApiClient.getPluginConfiguration(pluginId).then(function(config) {
 
-                view.querySelector(".chkEnableGSCleaner").checked = config.EnableGSCleaner;
+                view.querySelector(".chkEnableCycleImages").checked = config.EnableCycleImages;
+                view.querySelector("#cycleTagString", view).value = config.CycleTagString || "";
             });
         }
 
@@ -42,18 +43,32 @@ define([
 
                 loading.hide();
 
-                document.querySelector('.pageTitle').innerHTML = "Guest Star Cleaner" + '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href=""><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
+                document.querySelector('.pageTitle').innerHTML = "Cycle Images" + '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href="https://emby.media/community"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
 
-                var enableGSCleaner = view.querySelector(".chkEnableGSCleaner");
-                enableGSCleaner.addEventListener('change',
+                var enableCycleImages = view.querySelector(".chkEnableCycleImages");
+                enableCycleImages.addEventListener('change',
                     (e) => {
                         e.preventDefault();
                         ApiClient.getPluginConfiguration(pluginId).then((config) => {
-                            config.EnableGSCleaner = enableGSCleaner.checked;
+                            config.EnableCycleImages = enableCycleImages.checked;
                             ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
                                 Dashboard.processPluginConfigurationUpdateResult(r);
                             });
                         });
+                    });
+
+                var cycleTagBtn = view.querySelector("#btnSaveCycleTag");
+                var cycleTagString = view.querySelector("#cycleTagString");
+                cycleTagBtn.addEventListener('click',
+                    (e) => {
+                        e.preventDefault();
+                        ApiClient.getPluginConfiguration(pluginId).then((config) => {
+                            config.CycleTagString = cycleTagString.value;
+                            ApiClient.updatePluginConfiguration(pluginId, config).then((r) => {
+                                Dashboard.processPluginConfigurationUpdateResult(r);
+                            });
+                        });
+
                     });
             });
         };

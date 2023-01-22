@@ -15,11 +15,11 @@ using MediaBrowser.Model.Tasks;
 using Emby.CycleImages.ScheduledTasks;
 using System.Diagnostics;
 
-namespace Emby.CycleImages
+namespace Emby.CycleImages.ScheduledTasks
 {
-    public class CycleImagesPluginEntryPoint : IServerEntryPoint
+    public class PluginEntryPoint : IServerEntryPoint
     {
-        public static CycleImagesPluginEntryPoint Instance { get; private set; }
+        public static PluginEntryPoint Instance { get; private set; }
 
         private readonly IServerConfigurationManager _config;
 
@@ -32,7 +32,7 @@ namespace Emby.CycleImages
 
         
 
-        public CycleImagesPluginEntryPoint(IServerConfigurationManager config, ITaskManager taskManager,
+        public PluginEntryPoint(IServerConfigurationManager config, ITaskManager taskManager,
             IFileSystem fileSystem, ILogManager logManager, ILibraryMonitor libraryMonitor, ILibraryManager libraryManager)
         {
             _config = config;
@@ -45,13 +45,7 @@ namespace Emby.CycleImages
 
         public void Run()
         {
-            MigratePluginConfig();
-
-            Plugin.Instance.UpdateConfiguration(Plugin.Instance.Configuration);
-            //LibraryManager.ItemUpdated += LibraryManagerItemAdded;
-            LibraryManager.ItemAdded += LibraryManagerItemAdded;
-            LibraryManager.ItemRemoved += LibraryManagerItemRemoved;
-            //TaskManager.TaskCompleted += TaskManagerOnTaskCompleted;
+            //on initial load?
         }
 
         private void LibraryManagerItemRemoved(object sender, ItemChangeEventArgs e)
@@ -66,13 +60,13 @@ namespace Emby.CycleImages
         {
             var config = Plugin.Instance.Configuration;
             var item = e.Item;
-            //do something on vent ItemAdded with item e
+            //do something on event ItemAdded with item e
         }
         
         public void Dispose()
         {
-            Plugin.Instance.UpdateConfiguration(Plugin.Instance.Configuration);
-            TaskManager.TaskCompleted -= TaskManagerOnTaskCompleted;
+            //Plugin.Instance.UpdateConfiguration(Plugin.Instance.Configuration);
+            //TaskManager.TaskCompleted -= TaskManagerOnTaskCompleted;
         }
 
         private void TaskManagerOnTaskCompleted(object sender, TaskCompletionEventArgs e)
@@ -87,7 +81,7 @@ namespace Emby.CycleImages
 
         public void MigratePluginConfig()
         {
-            //another method
+            //a.n.other method using during eg run method
         }
     }
 }

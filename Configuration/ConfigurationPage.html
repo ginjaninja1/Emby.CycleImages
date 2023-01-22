@@ -2,25 +2,40 @@
 	<div class="content-primary">
 		<div class="verticalSection verticalSection">
 			<div class="sectionTitleContainer sectionTitleContainer-cards align-items-center">
-				<br />
-				<h2>Cycle Images</h2>
+				<!--<h2>Cycle Images</h2>-->
+				<h4>Removes and regenerates primary images on tagged items. Ensures [smart] playlists and collections have an image that reflects their content.</h4>
 
-				
-		<a is="emby-linkbutton" class="button-link" href="https://mediaarea.net/en/MediaInfo/Download" target="_blank">Plugin Forum Page for help/suggestions</a>-->
+				<a is="emby-linkbutton" class="button-link" href="https://mediaarea.net/en/MediaInfo/Download" target="_blank">Plugin Forum Page for help/suggestions</a>-->
 			</div>
 
-			<h3 style="color: var(--theme-accent-text-color); font-weight: bolder">Use Accent Color Info Statement</h3>
+			<!--<h3 style="color: var(--theme-accent-text-color); font-weight: bolder">Use Accent Color Info Statement</h3>-->
 
 			<div style="margin-top: 2em;">
 				<h3 class="checkboxListLabel">Enable Cycle Images</h3>
 				<label class="checkboxContainer">
-					<input is="emby-toggle" type="checkbox" class="chkEnableGSCleaner" />
+					<input is="emby-toggle" type="checkbox" class="chkEnableCycleImages" />
 					<span class="toggleButtonLabel mdl-switch__label">Global Option to Enable Plugin</span>
 				</label>
 				<div class="fieldDescription">This saves removing the plugin if you wish to disable it</div>
 			</div>
-            <br />
+			<br />
+			<div class="paperList checkboxList checkboxList-paperList">
+				<h3 class="checkboxListLabel">Cycle Image Tag(s)</h3>
+				<!--<h4>Items with these tags will have their images cycled</h4>-->
+				<div style="display: flex; align-items: center;">
+					<div style="flex-grow:1;">
+						<input is="emby-input" id="cycleTagString" label="Specify Cycle Image Tag(s); comma separated" autocomplete="off" spellcheck="false" />
+					</div>
+				</div>
+				<div class="fieldDescription">
+					<div>Items with these tags will have their primary image recalculated, based on their current content</div>
+					<div>Example: cyclepic,recommendation</div>
+				</div>
+				<!--<button id="submitButton" is="emby-button" type="submit" class="raised button-submit block" style="width: 75%; justify-self: center;"><span>Save List</span></button>-->
+				<button type="button" is="emby-button" id="btnSaveCycleTag" title="Save Tags" aria-label="Save Tags" class="raised button-submit block" style="width: 75%; justify-self: center;">Save Tags</button>
 			</div>
+			<br />
+		</div>
 
 			
 	</div>
