@@ -98,10 +98,9 @@ namespace Emby.CycleImages
                 Tags = new[] { tag },
                 
             };
-            /* for Some reason not acceesible in this function
-            config.CycleTageString
+            /* for Some reason not accessible in this function
+            config.CycleTagString
             Plugin.Instance.Configuration.CycleTagString
-            
             */
             
             _taggeditems = LibraryManager.GetItemList(queryList);
