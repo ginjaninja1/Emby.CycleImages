@@ -96,15 +96,17 @@ namespace Emby.CycleImages
             {
                 Recursive = true,
                 Tags = new[] { tag },
-                
-            }
+
+            };
 
             //Cheese- it should work now you need to initialise the plugin config in every method. dont do a global one because it will only load once and any user changes after a server restart will not be read correctly
-            config.CycleTagString
+            //thanks
+            //string cycleTagString = config.CycleTagString;
 
             //Cheese- are you try to tag thing so the show in UI?
             //Cheese- you should use the class LinkedItemInfo. this is what gives you hyperlinks. my mediainfo plugin makes good use of this
-            Plugin.Instance.Configuration.CycleTagString
+            //not following re linkediteminfo
+           
             
             
             _taggeditems = LibraryManager.GetItemList(queryList);
