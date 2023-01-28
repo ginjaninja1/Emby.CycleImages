@@ -90,18 +90,22 @@ namespace Emby.CycleImages
 
         private async Task refreshitems(string tag)
         {
-             
+             PluginConfiguration config = Plugin.Instance.Configuration;
             //BaseItem[] _items = null;
             InternalItemsQuery queryList = new InternalItemsQuery
             {
                 Recursive = true,
                 Tags = new[] { tag },
                 
-            };
-            /* for Some reason not accessible in this function
+            }
+
+            //Cheese- it should work now you need to initialise the plugin config in every method. dont do a global one because it will only load once and any user changes after a server restart will not be read correctly
             config.CycleTagString
+
+            //Cheese- are you try to tag thing so the show in UI?
+            //Cheese- you should use the class LinkedItemInfo. this is what gives you hyperlinks. my mediainfo plugin makes good use of this
             Plugin.Instance.Configuration.CycleTagString
-            */
+            
             
             _taggeditems = LibraryManager.GetItemList(queryList);
             _numberOfItemsInLibraries = _taggeditems.Length;
@@ -113,6 +117,10 @@ namespace Emby.CycleImages
                 //Perform a refresh metadata so the primary images gets generated again based on current content
                 //In powershell
                 // $ApiURL = $this.root + '/emby/items/' + $id + "/Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=true&ReplaceAllMetadata=true" + "&api_key=" + $this.apikey
+            
+                    //Cheese- TODO: show you how to use the Process Interface to launch external command line interfaces.
+                    //Again  my MediaInfo plugin makes good use of this and often lol
+
             }
 
         }
