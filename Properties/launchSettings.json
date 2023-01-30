@@ -1,0 +1,13 @@
+{
+  "profiles": {
+    "Emby.CycleImages": {
+      "commandName": "Project"
+    },
+    "Profile 1": {
+      "commandName": "Executable",
+      "executablePath": "C:\\EmbyPortable\\system\\EmbyServer.exe",
+      "commandLineArgs": "-nointerface",
+      "workingDirectory": "C:\\EmbyPortable\\system\\"
+    }
+  }
+}

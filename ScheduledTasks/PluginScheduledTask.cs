@@ -121,12 +121,14 @@ namespace Emby.CycleImages
             
             foreach (BaseItem item in _taggeditems)
             {
-                //Remove the primary image
+                //Remove the primary image from baseitem
                 //Perform a refresh metadata on the baseitem so the primary images gets generated again based on current content
              
-                ItemImageInfo iteminfo = new ItemImageInfo();
-                iteminfo = ItemRepository.GetImageInfo(item.InternalId,ImageType.Primary,0);
-                
+                //ItemImageInfo iteminfo = new ItemImageInfo();
+                //iteminfo = ItemRepository.GetImageInfo(item.InternalId,ImageType.Primary,0);
+                item.DeleteImage(ImageType.Primary, 0);
+                await item.RefreshMetadata(CancellationToken.None);
+                //ItemRepository.SaveItem(item, CancellationToken.None);
 
             }
 
