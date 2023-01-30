@@ -9,6 +9,7 @@ using MediaBrowser.Controller;
 //using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
+using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Controller.Sync;
 using MediaBrowser.Model.Configuration;
@@ -23,7 +24,7 @@ namespace Emby.CycleImages
     public class PluginScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         private readonly ILibraryManager LibraryManager;
-
+        private IItemRepository ItemRepository { get; }
         private readonly ILogger _log;
         private readonly IServerApplicationHost _serverApplicationHost;
         private readonly IUserDataManager _userDataManager;
@@ -45,9 +46,10 @@ namespace Emby.CycleImages
         public bool IsLogged => true;
 
         //Constructor
-        public PluginScheduledTask(ILibraryManager libraryManager, ILogManager logManager, IServerApplicationHost serverApplicationHost, IHttpClient httpClient)
+        public PluginScheduledTask(ILibraryManager libraryManager, ILogManager logManager, IServerApplicationHost serverApplicationHost, IHttpClient httpClient, IItemRepository itemRepository)
         {
             LibraryManager = libraryManager;
+            ItemRepository = itemRepository;
             _serverApplicationHost = serverApplicationHost;
             _httpClient = httpClient;
             _log = logManager.GetLogger(Plugin.Instance.Name);
@@ -88,6 +90,7 @@ namespace Emby.CycleImages
                 await refreshitems(t);
             }
             
+            
 
         }
 
@@ -119,20 +122,12 @@ namespace Emby.CycleImages
             foreach (BaseItem item in _taggeditems)
             {
                 //Remove the primary image
-                //Perform a refresh metadata so the primary images gets generated again based on current content
-                //In powershell
-                // $ApiURL = $this.root + '/emby/items/' + $id + "/Refresh?Recursive=true&ImageRefreshMode=FullRefresh&MetadataRefreshMode=FullRefresh&ReplaceAllImages=true&ReplaceAllMetadata=true" + "&api_key=" + $this.apikey
+                //Perform a refresh metadata on the baseitem so the primary images gets generated again based on current content
+             
+                ItemImageInfo iteminfo = new ItemImageInfo();
+                iteminfo = ItemRepository.GetImageInfo(item.InternalId,ImageType.Primary,0);
+                
 
-                //Cheese- TODO: show you how to use the Process Interface to launch external command line interfaces.
-                //Again  my MediaInfo plugin makes good use of this and often lol
-
-                //i dont want to call an external (to emby) command, i want to delete a primary image in emby database and refresh the image in emby
-                //i strugglign to work out how i find the Emby method to do this. one of these will do the refresh, but cant find the any "delete image" method
-                //wondering if there is a hack apprach where the plugin makes an http request to api to do the work rather than find a c# method.
-                LibraryManager.RefreshThumbnailImages(Video item, MediaStream videoStream, LibraryOptions libraryOptions, MetadataRefreshOptions metadataRefreshOptions, List < ChapterInfo > chapters, bool extractImages, bool saveChapters, CancellationToken cancellationToken);
-                UpdateImages(BaseItem item);
-                //i think i can get the primary imageinfo with the itemid of a baseitem with this.
-                ItemImageInfo GetImageInfo(long itemId, ImageType imageType, int index);
             }
 
         }
