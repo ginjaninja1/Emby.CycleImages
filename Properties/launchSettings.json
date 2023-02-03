@@ -3,7 +3,13 @@
     "Emby.CycleImages": {
       "commandName": "Project"
     },
-    "Profile 1": {
+    "Release": {
+      "commandName": "Executable",
+      "executablePath": "C:\\Users\\Nicholas Bird\\AppData\\Roaming\\Emby-Server\\system\\EmbyServer.exe",
+      "commandLineArgs": "-nointerface",
+      "workingDirectory": "C:\\Users\\Nicholas Bird\\AppData\\Roaming\\Emby-Server\\system\\"
+    },
+    "Beta": {
       "commandName": "Executable",
       "executablePath": "C:\\EmbyPortable\\system\\EmbyServer.exe",
       "commandLineArgs": "-nointerface",

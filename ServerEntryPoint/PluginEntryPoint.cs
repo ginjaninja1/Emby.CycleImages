@@ -53,6 +53,7 @@ namespace Emby.CycleImages.ScheduledTasks
             var item = e.Item;
             Log.Info("Library Monitory has removed {0} from the library", item);
             var config = Plugin.Instance.Configuration;
+            
             //do something on event item removed with item e
         }
 

@@ -47,7 +47,7 @@ namespace Emby.CycleImages
                 //html File
                 Name = "ConfigurationPage",
                 EmbeddedResourcePath = GetType().Namespace + ".Configuration.ConfigurationPage.html",
-                EnableInMainMenu = true
+                EnableInMainMenu = false
                 /*MenuSection = "server",*/
                 //MenuIcon = "theaters"
             },

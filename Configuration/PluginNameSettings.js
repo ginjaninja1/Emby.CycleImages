@@ -58,7 +58,7 @@
         var form = this;
 
         var page = dom.parentWithClass(form, "page");
-
+        
         ApiClient.getNamedConfiguration("PluginName").then(function (config) {
 
 	        config.EnableVP = page.querySelector(".chkBigScreen").checked;
