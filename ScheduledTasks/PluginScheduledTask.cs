@@ -13,6 +13,7 @@ using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
+//using MediaBrowser.Controller.Api;
 using MediaBrowser.Controller.Persistence;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Controller.Sync;
@@ -32,11 +33,12 @@ namespace Emby.CycleImages
     public class PluginScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         private readonly ILibraryManager LibraryManager;
-        private IItemRepository ItemRepository { get; }
+        private readonly IItemRepository ItemRepository;
         private readonly ILogger _log;
         private readonly IServerApplicationHost _serverApplicationHost;
         private readonly IUserManager _userManager;
-        //private readonly IUserDataManager _userDataManager;
+        private readonly IUserDataManager _userDataManager;
+        //private readonly IItemRepository itemrepository;
         //private readonly ICollectionManager _collectionManager;
         private IHttpClient _httpClient;
         private ISyncProvider syncProvider;
@@ -57,10 +59,10 @@ namespace Emby.CycleImages
 
         //Constructor
         public PluginScheduledTask(ILibraryManager libraryManager, ILogManager logManager, 
-            IServerApplicationHost serverApplicationHost, IHttpClient httpClient, IUserManager userManager)
+            IServerApplicationHost serverApplicationHost, IHttpClient httpClient, IUserManager userManager, IItemRepository itemRepository)
         {
             LibraryManager = libraryManager;
-            //ItemRepository = itemRepository;
+            ItemRepository = itemRepository;
             _serverApplicationHost = serverApplicationHost;
             _httpClient = httpClient;
             _log = logManager.GetLogger(Plugin.Instance.Name);
@@ -84,7 +86,7 @@ namespace Emby.CycleImages
         {
             //Do work here for your Scheduled Task
             PluginConfiguration config = Plugin.Instance.Configuration;
-            
+           
             if (!config.EnableCycleImages)
             {
                 _log.Info("Plugin is Not Enabled in Plugin Configuration: Exiting Now");
@@ -95,7 +97,7 @@ namespace Emby.CycleImages
                 _log.Info("No Tag is Defined in Plugin Configuration: Exiting Now");
                 return;
             }
-
+            
             List<string> tags = config.CycleTagString.Split(',').ToList<string>();
 
             foreach (string t in tags)
@@ -162,25 +164,31 @@ namespace Emby.CycleImages
 
         private long MakeHash(BaseItem parentitem)
         {
-            //only works with collections for now.
+            
             var queryList = new InternalItemsQuery
             {
-                //ParentIds = new[] { parentitem.InternalId },
-                CollectionIds = new[] { parentitem.InternalId },
+                ParentIds = new[] { parentitem.InternalId },
+                //CollectionIds = new[] { parentitem.InternalId },
                 DtoOptions = new DtoOptions(true)
                 //Recursive = true
             };
            
-            var children = LibraryManager.QueryItems(queryList);
+            //var children = LibraryManager.QueryItems(queryList);
+            var children = ItemRepository.GetItems(queryList);
+            
             
             long hash = 100000;
-            for (var i = 0; i < children.TotalRecordCount; i++)
+            //
+            //
+               for (var i = 0; i < children.TotalRecordCount; i++)
             {
                 if (i%2 != 0)
                 {
                     hash = hash * children.Items[i].InternalId;
+                    //hash = hash * children[i];
                 } else
                 {
+                    //hash = hash * children.Items[i].InternalId;
                     hash = hash / children.Items[i].InternalId;
                 }
             }
@@ -213,6 +221,36 @@ namespace Emby.CycleImages
 
         }
 
+        /*
+        public async Task<List<ItemInfoModel>> GetLatestItems(string parentId)
+        {
+            JsonSerializerOptions _jsonSerializerOptions = new()
+            {
+                PropertyNameCaseInsensitive = true,
+                Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+            };
+
+
+            List<ItemInfoModel> baseItems = new List<ItemInfoModel>();
+
+            string url = string.Format(_apiCalls.GetLatestItemsApi(parentId));
+
+            HttpResponseMessage response = await _httpClient.GetAsync(url);
+            if (response.IsSuccessStatusCode)
+            {
+                var json = await response.Content.ReadAsStringAsync();
+                try
+                {
+                    baseItems = JsonSerializer.Deserialize<List<ItemInfoModel>>(json, _jsonSerializerOptions);
+                }
+                catch (Exception e)
+                {
+                    Debug.WriteLine(e);
+                }
+            }
+            return baseItems;
+        }
+        */
 
         //Task Triggers - Currently unset, user can set these themselves in the menu.
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
