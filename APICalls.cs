@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using System.Text;
 
+
 namespace Emby.CycleImages
 {
-    class APICalls
+    public class ApiCalls
     {
-        //not ready need more help from dave
-        /*
+        
          
         public string BaseApiUrl()
         {
@@ -26,6 +26,6 @@ namespace Emby.CycleImages
             return string.Format(UserBasedCall(request));
 
         }
-        */
+        
     }
 }

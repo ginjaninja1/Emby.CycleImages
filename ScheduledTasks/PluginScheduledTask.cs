@@ -164,17 +164,23 @@ namespace Emby.CycleImages
 
         private long MakeHash(BaseItem parentitem)
         {
-            
+
+            long manualid = 67;
+
             var queryList = new InternalItemsQuery
             {
-                ParentIds = new[] { parentitem.InternalId },
+                //ParentIds = new[] { parentitem.InternalId },
+                //Parent = LibraryManager.GetItemById(manualid),
+                Parent = parentitem,
+                //ParentIds = new[] { manualid },
                 //CollectionIds = new[] { parentitem.InternalId },
-                DtoOptions = new DtoOptions(true)
+                //DtoOptions = new DtoOptions(true),
                 //Recursive = true
             };
            
             //var children = LibraryManager.QueryItems(queryList);
             var children = ItemRepository.GetItems(queryList);
+            //LibraryManager.GetItemList()
             
             
             long hash = 100000;
