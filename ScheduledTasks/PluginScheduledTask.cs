@@ -25,7 +25,13 @@ using MediaBrowser.Model.Querying;
 using MediaBrowser.Model.Tasks;
 using MediaBrowser.Model.Dto;
 using MediaBrowser.Controller.Collections;
-
+//using System.Net.Http;
+//using System.Net.Http.Headers;
+//using System.Text.Json;
+//using System.Text.Json.Serialization;
+//using System.Diagnostics;
+using MediaBrowser.Model.Serialization;
+using MediaBrowser.Controller.Playlists;
 
 namespace Emby.CycleImages
 {
@@ -33,15 +39,31 @@ namespace Emby.CycleImages
     public class PluginScheduledTask : IScheduledTask, IConfigurableScheduledTask
     {
         private readonly ILibraryManager LibraryManager;
-        private readonly IItemRepository ItemRepository;
+        //private readonly IItemRepository ItemRepository;
         private readonly ILogger _log;
         private readonly IServerApplicationHost _serverApplicationHost;
         private readonly IUserManager _userManager;
-        private readonly IUserDataManager _userDataManager;
+        //private readonly IUserDataManager _userDataManager;
         //private readonly IItemRepository itemrepository;
         //private readonly ICollectionManager _collectionManager;
-        private IHttpClient _httpClient;
-        private ISyncProvider syncProvider;
+        //private ISyncProvider syncProvider;
+        //private IHttpClient _httpClient;
+        //private readonly IJsonSerializer _jsonSerializer;
+        //private readonly ApiCalls _apiCalls;
+        
+        /*
+        static readonly HttpClient httpClient = new HttpClient
+
+        
+        {
+            BaseAddress = new Uri(Network.baseAddress),
+            DefaultRequestHeaders =
+    {
+        Authorization =
+            new AuthenticationHeaderValue("Bearer", Network.token)
+    }
+        };
+        */
 
         public string Name => "Cycle Images";
 
@@ -58,15 +80,22 @@ namespace Emby.CycleImages
         public bool IsLogged => true;
 
         //Constructor
-        public PluginScheduledTask(ILibraryManager libraryManager, ILogManager logManager, 
-            IServerApplicationHost serverApplicationHost, IHttpClient httpClient, IUserManager userManager, IItemRepository itemRepository)
+        public PluginScheduledTask(
+            ILibraryManager libraryManager,
+            ILogManager logManager, 
+            IServerApplicationHost serverApplicationHost,
+            IHttpClient httpClient,
+            IJsonSerializer jsonSerializer,
+            IUserManager userManager
+            )
         {
             LibraryManager = libraryManager;
-            ItemRepository = itemRepository;
-            _serverApplicationHost = serverApplicationHost;
-            _httpClient = httpClient;
             _log = logManager.GetLogger(Plugin.Instance.Name);
+            _serverApplicationHost = serverApplicationHost;
+            //_httpClient = httpClient;
+            //_jsonSerializer = jsonSerializer;
             _userManager = userManager;
+            //_apiCalls = apiCalls;
             //_collectionManager = collectionManager;
             
         }
@@ -86,7 +115,11 @@ namespace Emby.CycleImages
         {
             //Do work here for your Scheduled Task
             PluginConfiguration config = Plugin.Instance.Configuration;
+            
            
+
+
+
             if (!config.EnableCycleImages)
             {
                 _log.Info("Plugin is Not Enabled in Plugin Configuration: Exiting Now");
@@ -113,32 +146,41 @@ namespace Emby.CycleImages
 
         private async Task refreshitems(string tag)
         {
-            //Get Collections, later functions only work with collections.
+            //Currently only works for item types which support as folder.GetItems
             InternalItemsQuery queryList = new InternalItemsQuery
             {
-                IncludeItemTypes = new[] { nameof(BoxSet) },
+                IncludeItemTypes = new[] { nameof(BoxSet), nameof(Playlist) },
                 Tags = new[] { tag }
             };
             _taggeditems = LibraryManager.GetItemList(queryList);
             _numberOfItemsInLibraries = _taggeditems.Length;
             _log.Info("Total No. of Objects with Tag : " + tag + " : {0}", _numberOfItemsInLibraries.ToString());
-
+            
             foreach (BaseItem item in _taggeditems)
             {
-                
-                if (NeedUpdate(item))
+                //only works on BaseItems of type Folder
+                if (item.GetType() == typeof(BoxSet) || item.GetType() == typeof(Playlist))
                 {
-                    //Remove the primary image from baseitem
-                    //Perform a refresh metadata on the baseitem so the primary images gets generated again based on current content
-                    item.DeleteImage(ImageType.Primary, 0);
-                    await item.RefreshMetadata(CancellationToken.None);
-                    _log.Info("Refreshed Image for ID:{0} Name:{1} Type:{2}", item.InternalId, item.Name, item.GetType().Name);
-                    UpdateHash(item);
+                    if (NeedUpdate(item))
+                    {
+                        //Remove the primary image from baseitem
+                        //Perform a refresh metadata on the baseitem so the primary images gets generated again based on current content
+                        item.DeleteImage(ImageType.Primary, 0);
+                        await item.RefreshMetadata(CancellationToken.None);
+                        _log.Info("Refreshed Image for ID:{0} Name:{1} Type:{2}", item.InternalId, item.Name, item.GetType().Name);
+                        UpdateHash(item);
 
-                } else
-                {
-                    _log.Info("No Update Neccessary for ID:{0} Name:{1} Type:{2}", item.InternalId, item.Name, item.GetType().Name);
+                    }
+                    else
+                    {
+                        _log.Info("No Update Neccessary for ID:{0} Name:{1} Type:{2}", item.InternalId, item.Name, item.GetType().Name);
+                    }
                 }
+                else
+                {
+                    _log.Info("Ignored - Only Boxsets and Playlists supported ID:{0} Name:{1} Type:{2}", item.InternalId, item.Name, item.GetType().Name);
+                }
+                
                 
                 
             }
@@ -164,23 +206,12 @@ namespace Emby.CycleImages
 
         private long MakeHash(BaseItem parentitem)
         {
-
-            long manualid = 67;
-
             var queryList = new InternalItemsQuery
             {
-                //ParentIds = new[] { parentitem.InternalId },
-                //Parent = LibraryManager.GetItemById(manualid),
-                Parent = parentitem,
-                //ParentIds = new[] { manualid },
-                //CollectionIds = new[] { parentitem.InternalId },
-                //DtoOptions = new DtoOptions(true),
-                //Recursive = true
+                Parent = parentitem
             };
-           
-            //var children = LibraryManager.QueryItems(queryList);
-            var children = ItemRepository.GetItems(queryList);
-            //LibraryManager.GetItemList()
+
+            var children = (parentitem as Folder).GetItems(queryList);
             
             
             long hash = 100000;
@@ -198,8 +229,10 @@ namespace Emby.CycleImages
                     hash = hash / children.Items[i].InternalId;
                 }
             }
-
+            
             return hash;
+            
+            
           
         }
 
@@ -227,36 +260,36 @@ namespace Emby.CycleImages
 
         }
 
-        /*
-        public async Task<List<ItemInfoModel>> GetLatestItems(string parentId)
-        {
-            JsonSerializerOptions _jsonSerializerOptions = new()
-            {
-                PropertyNameCaseInsensitive = true,
-                Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
-            };
+        
+        //public async Task<List<ItemInfoModel>> GetLatestItems(string parentId)
+        //{
+        //    JsonSerializerOptions _jsonSerializerOptions = new()
+        //    {
+        //        PropertyNameCaseInsensitive = true,
+        //        Converters = { new JsonStringEnumConverter(JsonNamingPolicy.CamelCase) }
+        //    };
 
 
-            List<ItemInfoModel> baseItems = new List<ItemInfoModel>();
+        //    List<ItemInfoModel> baseItems = new List<ItemInfoModel>();
 
-            string url = string.Format(_apiCalls.GetLatestItemsApi(parentId));
+        //    string url = string.Format(_apiCalls.GetLatestItemsApi(parentId));
 
-            HttpResponseMessage response = await _httpClient.GetAsync(url);
-            if (response.IsSuccessStatusCode)
-            {
-                var json = await response.Content.ReadAsStringAsync();
-                try
-                {
-                    baseItems = JsonSerializer.Deserialize<List<ItemInfoModel>>(json, _jsonSerializerOptions);
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine(e);
-                }
-            }
-            return baseItems;
-        }
-        */
+        //    HttpResponseMessage response = await _httpClient.GetAsync(url);
+        //    if (response.IsSuccessStatusCode)
+        //    {
+        //        var json = await response.Content.ReadAsStringAsync();
+        //        try
+        //        {
+        //            baseItems = JsonSerializer.Deserialize<List<ItemInfoModel>>(json, _jsonSerializerOptions);
+        //        }
+        //        catch (Exception e)
+        //        {
+        //            Debug.WriteLine(e);
+        //        }
+        //    }
+        //    return baseItems;
+        //}
+        
 
         //Task Triggers - Currently unset, user can set these themselves in the menu.
         public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
