@@ -43,7 +43,7 @@ define([
 
                 loading.hide();
 
-                document.querySelector('.pageTitle').innerHTML = "Cycle Images" + '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href="https://emby.media/community"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
+                document.querySelector('.pageTitle').innerHTML = "Cycle Images" + '<a is="emby-linkbutton" class="raised raised-mini emby-button" target="_blank" href="https://emby.media/community/topic/116139-ginjaninja-tools-cycle-images-plugin-replace-collection-collage-image-based-on-latest-members/"><i class="md-icon button-icon button-icon-left secondaryText headerHelpButtonIcon">help</i><span class="headerHelpButtonText">Help</span></a>';
 
                 var enableCycleImages = view.querySelector(".chkEnableCycleImages");
                 enableCycleImages.addEventListener('change',

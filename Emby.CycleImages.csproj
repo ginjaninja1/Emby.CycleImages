@@ -14,19 +14,20 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Remove="Configuration\PluginNameSettings.html" />
+    <None Remove="Configuration\PluginNameSettings.js" />
+    <None Remove="Configuration\PluginTab2ConfigurationPage.html" />
+    <None Remove="Configuration\PluginTab2ConfigurationPage.js" />
+    <None Remove="Configuration\PluginTab3ConfigurationPage.html" />
+    <None Remove="Configuration\PluginTab3ConfigurationPage.js" />
     <None Remove="thumb.jpg" />
+    <None Remove="thumb.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Configuration\PluginTab2ConfigurationPage.html" />
-    <EmbeddedResource Include="Configuration\PluginTab2ConfigurationPage.js" />
-    <EmbeddedResource Include="Configuration\PluginTab3ConfigurationPage.html" />
-    <EmbeddedResource Include="Configuration\PluginTab3ConfigurationPage.js" />
     <EmbeddedResource Include="Configuration\ConfigurationPage.html" />
     <EmbeddedResource Include="Configuration\ConfigurationPage.js" />
-    <EmbeddedResource Include="Configuration\PluginNameSettings.html" />
-    <EmbeddedResource Include="Configuration\PluginNameSettings.js" />
-    <EmbeddedResource Include="thumb.jpg" />
+    <EmbeddedResource Include="thumb.png" />
   </ItemGroup>
 
   <ItemGroup>

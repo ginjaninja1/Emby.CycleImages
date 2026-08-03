@@ -29,13 +29,13 @@ namespace Emby.CycleImages
         {
             Instance = this;
         }
-        public ImageFormat ThumbImageFormat => ImageFormat.Jpg;
+        public ImageFormat ThumbImageFormat => ImageFormat.Png;
 
         //Display Thumbnail image for Plugin Catalogue  - you will need to change build action for thumb.jpg to embedded Resource
         public Stream GetThumbImage()
         {
             Type type = GetType();
-            return type.Assembly.GetManifestResourceStream(type.Namespace + ".thumb.jpg");
+            return type.Assembly.GetManifestResourceStream(type.Namespace + ".thumb.png");
         }
 
         //Web pages for Server UI configuration
