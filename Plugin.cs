@@ -1,67 +1,74 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using Emby.CycleImages.Configuration;
+using Emby.CycleImages.UI;
+using MediaBrowser.Common;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Plugins;
+using MediaBrowser.Controller;
 using MediaBrowser.Model.Drawing;
-using MediaBrowser.Model.Plugins;
+using MediaBrowser.Model.Logging;
+using MediaBrowser.Model.Plugins.UI;
 using MediaBrowser.Model.Serialization;
 
 namespace Emby.CycleImages
 {
-    public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages, IHasThumbImage
+    public class Plugin : BasePlugin<PluginConfiguration>, IHasThumbImage, IHasUIPages
     {
-        public static Plugin Instance { get; set; }
+        private readonly IServerApplicationHost applicationHost;
+        private readonly ILogger logger;
 
-        //You will need to generate a new GUID and paste it here - Tools => Create GUID
-        private Guid _id = new Guid("600FF041-1129-441F-82D9-D3943F22C7BE");
-        
+        private List<IPluginUIPageController> pages;
+
+        public Plugin(
+            IServerApplicationHost applicationHost,
+            ILogManager logManager)
+            : base(
+                applicationHost.Resolve<IApplicationPaths>(),
+                applicationHost.Resolve<IXmlSerializer>())
+        {
+            this.applicationHost = applicationHost;
+
+            this.logger = logManager.GetLogger(this.Name);
+
+            Instance = this;
+        }
+
+        public static Plugin Instance { get; private set; }
 
         public override string Name => "Cycle Images";
 
-        public override string Description => "Cycles Images on tagged media items";
+        public override string Description =>
+            "Rebuilds a four-poster collage image for collections and playlists based on their most recently added members.";
 
-        public override Guid Id => _id;
+        public override Guid Id =>
+            new Guid("600FF041-1129-441F-82D9-D3943F22C7BE");
 
-        public Plugin(IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer) : base(applicationPaths,
-            xmlSerializer)
-        {
-            Instance = this;
-        }
         public ImageFormat ThumbImageFormat => ImageFormat.Png;
 
-        //Display Thumbnail image for Plugin Catalogue  - you will need to change build action for thumb.jpg to embedded Resource
         public Stream GetThumbImage()
+            => this.GetType()
+                .Assembly
+                .GetManifestResourceStream(this.GetType().Namespace + ".thumb.png");
+
+        public IReadOnlyCollection<IPluginUIPageController> UIPageControllers
         {
-            Type type = GetType();
-            return type.Assembly.GetManifestResourceStream(type.Namespace + ".thumb.png");
+            get
+            {
+                if (this.pages == null)
+                {
+                    this.pages = new List<IPluginUIPageController>
+                    {
+                        new MainPageController(
+                            this.GetPluginInfo(),
+                            this.applicationHost,
+                            this.logger)
+                    };
+                }
+
+                return this.pages.AsReadOnly();
+            }
         }
-
-        //Web pages for Server UI configuration
-        public IEnumerable<PluginPageInfo> GetPages() => new[]
-        {
-
-            new PluginPageInfo
-            {
-                //html File
-                Name = "ConfigurationPage",
-                EmbeddedResourcePath = GetType().Namespace + ".Configuration.ConfigurationPage.html",
-                EnableInMainMenu = true
-                /*MenuSection = "server",*/
-                //MenuIcon = "theaters"
-            },
-            new PluginPageInfo
-            {
-                //javascript file
-                Name = "ConfigurationPageJS",
-                EmbeddedResourcePath = GetType().Namespace + ".Configuration.ConfigurationPage.js"
-            },
-        };
-
-
-
-
-
     }
 }

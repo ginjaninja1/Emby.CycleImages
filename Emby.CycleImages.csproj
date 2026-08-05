@@ -3,38 +3,24 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <AssemblyVersion>0.1.0.2</AssemblyVersion>
-    <FileVersion>0.1.0.2</FileVersion>
+    <AssemblyVersion>0.2.0.0</AssemblyVersion>
+    <FileVersion>0.2.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Models\**" />
-    <EmbeddedResource Remove="Models\**" />
-    <None Remove="Models\**" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Remove="Configuration\PluginNameSettings.html" />
-    <None Remove="Configuration\PluginNameSettings.js" />
-    <None Remove="Configuration\PluginTab2ConfigurationPage.html" />
-    <None Remove="Configuration\PluginTab2ConfigurationPage.js" />
-    <None Remove="Configuration\PluginTab3ConfigurationPage.html" />
-    <None Remove="Configuration\PluginTab3ConfigurationPage.js" />
-    <None Remove="thumb.jpg" />
     <None Remove="thumb.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Include="Configuration\ConfigurationPage.html" />
-    <EmbeddedResource Include="Configuration\ConfigurationPage.js" />
     <EmbeddedResource Include="thumb.png" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="MediaBrowser.Common" Version="4.7.9" />
-    <PackageReference Include="MediaBrowser.Server.Core" Version="4.7.9" />
-    <PackageReference Include="System.Memory" Version="4.5.5" />
-    <PackageReference Include="System.Text.Json" Version="6.0.5" />
+    <PackageReference Include="MediaBrowser.Common" Version="4.9.1.90" />
+    <PackageReference Include="MediaBrowser.Server.Core" Version="4.9.1.90" />
+    <!-- Required for ReadOnlyMemory<char> used by IProviderManager.SaveImage;
+         netstandard2.0 has no built-in System.Memory. -->
+    <PackageReference Include="System.Memory" Version="4.6.3" />
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
