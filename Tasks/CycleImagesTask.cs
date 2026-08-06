@@ -8,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Emby.CycleImages.Configuration;
 using MediaBrowser.Common.Configuration;
+using MediaBrowser.Controller.Channels;
 using MediaBrowser.Controller.Drawing;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
@@ -23,9 +24,9 @@ using MediaBrowser.Model.Tasks;
 namespace Emby.CycleImages.Tasks
 {
     /// <summary>
-    /// Finds collections (BoxSets) and playlists carrying one of the configured
-    /// tags, and rebuilds their primary image as a collage of the four most
-    /// recently added immediate members.
+    /// Finds collections, playlists, and channels carrying a configured tag,
+    /// plus explicitly enabled libraries, and rebuilds their primary image as
+    /// a collage of the four most recently added members.
     ///
     /// Emby already auto-generates a similar collage natively (see
     /// Emby.Providers.Playlists.PlaylistDynamicImageProvider), but its member
@@ -45,7 +46,8 @@ namespace Emby.CycleImages.Tasks
         private static readonly string[] CollageEligibleItemTypes =
         {
             nameof(BoxSet),
-            nameof(Playlist)
+            nameof(Playlist),
+            nameof(Channel)
         };
 
         private readonly ILibraryManager libraryManager;
@@ -75,7 +77,7 @@ namespace Emby.CycleImages.Tasks
 
         public string Key => "CycleImagesTask";
 
-        public string Description => "Rebuilds the primary image of tagged collections and playlists as a collage of their most recently added members.";
+        public string Description => "Rebuilds collage images for tagged collections, playlists, and channels, plus enabled libraries, from their most recently added members.";
 
         public string Category => "GinjaNinja Tools";
 
@@ -89,9 +91,11 @@ namespace Emby.CycleImages.Tasks
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(config.CycleTagString))
+            var enabledLibraryIds = config.EnabledLibraryIds ?? Array.Empty<string>();
+
+            if (string.IsNullOrWhiteSpace(config.CycleTagString) && enabledLibraryIds.Length == 0)
             {
-                this.logger.Info("No tag is defined in plugin configuration: exiting now");
+                this.logger.Info("No tag or library is enabled in plugin configuration: exiting now");
                 return;
             }
 
@@ -101,7 +105,7 @@ namespace Emby.CycleImages.Tasks
                 return;
             }
 
-            var tags = config.CycleTagString
+            var tags = (config.CycleTagString ?? string.Empty)
                 .Split(',')
                 .Select(t => t.Trim())
                 .Where(t => !string.IsNullOrEmpty(t))
@@ -112,6 +116,35 @@ namespace Emby.CycleImages.Tasks
                 this.logger.Info("Cycle Images: processing tag '{0}'", tag);
                 await ProcessTagAsync(tag, cancellationToken, progress).ConfigureAwait(false);
             }
+
+            await ProcessLibrariesAsync(enabledLibraryIds, cancellationToken, progress).ConfigureAwait(false);
+        }
+
+        private async Task ProcessLibrariesAsync(string[] libraryIds, CancellationToken cancellationToken, IProgress<double> progress)
+        {
+            var libraries = libraryIds
+                .Select(ResolveLibrary)
+                .OfType<CollectionFolder>()
+                .ToArray();
+
+            for (var index = 0; index < libraries.Length; index++)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                await RebuildCollageAsync(libraries[index], cancellationToken).ConfigureAwait(false);
+                progress.Report(((index + 1) / (double)libraries.Length) * 100.0);
+            }
+        }
+
+        private BaseItem ResolveLibrary(string value)
+        {
+            if (long.TryParse(value, out var internalId))
+            {
+                return this.libraryManager.GetItemById(internalId);
+            }
+
+            return Guid.TryParse(value, out var id)
+                ? this.libraryManager.GetItemById(id)
+                : null;
         }
 
         private async Task ProcessTagAsync(string tag, CancellationToken cancellationToken, IProgress<double> progress)
@@ -142,32 +175,36 @@ namespace Emby.CycleImages.Tasks
 
         private async Task RebuildCollageAsync(Folder folder, CancellationToken cancellationToken)
         {
-            var objectType = folder is BoxSet ? "collection" : "playlist";
+            var objectType = folder is BoxSet
+                ? "collection"
+                : folder is Playlist
+                    ? "playlist"
+                    : folder is Channel ? "channel" : "library";
 
-            // Playlist and BoxSet membership is stored as linked/list items, not
-            // as ordinary Folder children.  This is the same API used by Emby's
-            // PlaylistDynamicImageProvider for both object types.
-            var grouping = folder as IHasFolderGrouping;
-            if (grouping == null)
+            // Playlist and BoxSet membership is stored as linked/list items;
+            // channels and libraries expose ordinary folder queries.
+            BaseItem[] members;
+            if (folder is IHasFolderGrouping grouping)
             {
-                this.logger.Warn("{0} '{1}': does not expose list membership - skipping", objectType, folder.Name);
-                return;
+                members = grouping.GetItems(
+                    new InternalItemsQuery
+                    {
+                        EnableTotalRecordCount = false,
+                        QueryName = "CycleImagesTask",
+                        OrderBy = new[] { (ItemSortBy.DateCreated, SortOrder.Descending) }
+                    },
+                    cancellationToken).Items;
             }
-
-            var members = grouping.GetItems(
-                new InternalItemsQuery
-                {
-                    EnableTotalRecordCount = false,
-                    QueryName = "CycleImagesTask",
-                    OrderBy = new[] { (ItemSortBy.DateCreated, SortOrder.Descending) }
-                },
-                cancellationToken).Items;
+            else
+            {
+                members = folder.GetItemList(CreateFolderQuery(folder));
+            }
 
             var memberImages = await ResolveLocalMemberImagesAsync(members, cancellationToken).ConfigureAwait(false);
 
             if (memberImages.Count == 0)
             {
-                this.logger.Info("{0} '{1}': no members with a usable primary image were found among {2} member(s) - skipping", objectType, folder.Name, members.Length);
+                this.logger.Info("{0} '{1}': no members with a usable image were found among {2} member(s) - skipping", objectType, folder.Name, members.Length);
                 return;
             }
 
@@ -185,13 +222,18 @@ namespace Emby.CycleImages.Tasks
                 return;
             }
 
-            // Matches Emby's own BaseLazyCollageImageProvider.CreateImage: BoxSet
-            // uses a 400x600 poster-shaped canvas, Playlist a 600x600 square -
-            // both fall through Skia's aspect-ratio dispatch to the same 2x2
-            // grid builder either way (there is no distinct native "poster"
-            // layout - see Emby.Drawing.Skia.StripCollageBuilder).
-            var (width, height) = folder is BoxSet ? (400, 600) : (600, 600);
-            var outputPath = Path.Combine(this.applicationPaths.TempDirectory, $"{Guid.NewGuid()}.jpg");
+            // Matches BaseLazyCollageImageProvider: libraries use a 640x360
+            // PNG, BoxSets a 400x600 JPEG, and playlists a 600x600 JPEG.
+            // Channels are also top-level landscape folders; their native
+            // image normally comes from the channel provider rather than a
+            // collage, so the library form factor is used for cycling.
+            var isLandscape = folder is CollectionFolder || folder is Channel;
+            var (width, height) = isLandscape
+                ? (640, 360)
+                : folder is BoxSet ? (400, 600) : (600, 600);
+            var imageFormat = isLandscape ? "png" : "jpg";
+            var mimeType = isLandscape ? "image/png" : "image/jpeg";
+            var outputPath = Path.Combine(this.applicationPaths.TempDirectory, $"{Guid.NewGuid()}.{imageFormat}");
             Directory.CreateDirectory(this.applicationPaths.TempDirectory);
 
             try
@@ -212,7 +254,7 @@ namespace Emby.CycleImages.Tasks
                     folder,
                     this.libraryManager.GetLibraryOptions(folder),
                     outputPath,
-                    "image/jpeg".AsMemory(),
+                    mimeType.AsMemory(),
                     ImageType.Primary,
                     null,
                     // Keep this as a plugin-managed poster. If source IDs are
@@ -224,6 +266,16 @@ namespace Emby.CycleImages.Tasks
                     directoryService: directoryService,
                     updateImageCache: true,
                     cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                // Channels are retained in Emby's in-memory library-item
+                // cache. SaveImage updates this instance and the repository,
+                // but the channel API can continue serving the separately
+                // cached ImageInfos until the server restarts. UpdateImages
+                // synchronizes that live cached instance immediately.
+                if (folder is Channel)
+                {
+                    this.libraryManager.UpdateImages(folder);
+                }
 
                 // SaveImage updates this BaseItem instance but does not persist
                 // the image path. Without this write, a later request reloads
@@ -249,6 +301,61 @@ namespace Emby.CycleImages.Tasks
                     this.logger.Warn("Could not delete temporary collage file '{0}': {1}", outputPath, ex.Message);
                 }
             }
+        }
+
+        private static InternalItemsQuery CreateFolderQuery(Folder folder)
+        {
+            var query = new InternalItemsQuery
+            {
+                Recursive = true,
+                EnableTotalRecordCount = false,
+                QueryName = "CycleImagesTask",
+                OrderBy = new[] { (ItemSortBy.DateCreated, SortOrder.Descending) }
+            };
+
+            if (!(folder is CollectionFolder library))
+            {
+                return query;
+            }
+
+            var contentType = library.CollectionType ?? string.Empty;
+            if (IsCollectionType(contentType, CollectionType.Movies))
+                query.IncludeItemTypes = new[] { "Movie" };
+            else if (IsCollectionType(contentType, CollectionType.TvShows))
+                query.IncludeItemTypes = new[] { "Series" };
+            else if (IsCollectionType(contentType, CollectionType.Music)
+                || IsCollectionType(contentType, CollectionType.AudioBooks))
+            {
+                query.IncludeItemTypes = new[] { "Audio", "MusicVideo" };
+                query.GroupByAlbumId = true;
+            }
+            else if (IsCollectionType(contentType, CollectionType.MusicVideos))
+                query.IncludeItemTypes = new[] { "MusicVideo" };
+            else if (IsCollectionType(contentType, CollectionType.Books))
+                query.IncludeItemTypes = new[] { "Book" };
+            else if (IsCollectionType(contentType, CollectionType.Games))
+                query.IncludeItemTypes = new[] { "Game" };
+            else if (IsCollectionType(contentType, CollectionType.BoxSets))
+            {
+                query.IncludeItemTypes = new[] { "BoxSet" };
+                query.Recursive = false;
+            }
+            else if (IsCollectionType(contentType, CollectionType.Playlists))
+            {
+                query.IncludeItemTypes = new[] { "Playlist" };
+                query.Recursive = false;
+            }
+            else if (IsCollectionType(contentType, CollectionType.HomeVideos))
+                query.IncludeItemTypes = new[] { "Video", "Photo" };
+            else
+                query.IncludeItemTypes = new[] { "Video", "Audio", "Photo", "Movie", "Series", "MusicVideo", "Game" };
+
+            return query;
+        }
+
+        private static bool IsCollectionType(string actual, ReadOnlyMemory<char> expected)
+        {
+            return string.Equals(actual, expected.ToString(), StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -282,7 +389,8 @@ namespace Emby.CycleImages.Tasks
                     continue;
                 }
 
-                var image = imageOwner.GetImageInfo(ImageType.Primary, 0);
+                var image = imageOwner.GetImageInfo(ImageType.Primary, 0)
+                    ?? imageOwner.GetImageInfo(ImageType.Thumb, 0);
 
                 if (image == null)
                 {

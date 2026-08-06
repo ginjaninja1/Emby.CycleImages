@@ -16,10 +16,12 @@ namespace Emby.CycleImages.Configuration
         public bool EnableCycleImages { get; set; } = true;
 
         /// <summary>
-        /// Comma-separated list of tags. Any collection or playlist carrying
+        /// Comma-separated list of tags. Any collection, playlist, or channel carrying
         /// one of these tags has its primary image rebuilt as a collage of
         /// its four most recently added immediate members.
         /// </summary>
         public string CycleTagString { get; set; } = "cyclepic";
+
+        public string[] EnabledLibraryIds { get; set; } = System.Array.Empty<string>();
     }
 }

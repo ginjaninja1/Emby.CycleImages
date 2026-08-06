@@ -11,7 +11,7 @@ namespace Emby.CycleImages.UI.Config
         public override string EditorTitle => "Cycle Images - Configuration";
 
         public override string EditorDescription =>
-            "Rebuilds a four-poster collage image for tagged collections and playlists, based on their most recently added members.";
+            "Rebuilds collage images for tagged collections, playlists, and channels, plus individually enabled libraries, based on their most recently added members.";
 
         public CaptionItem GeneralHeading { get; set; } = new CaptionItem("General");
 
@@ -21,9 +21,14 @@ namespace Emby.CycleImages.UI.Config
         public bool EnableCycleImages { get; set; } = true;
 
         [DisplayName("Tag(s) to Cycle")]
-        [Description("Comma-separated tags. Any collection or playlist carrying one of these tags will have its primary image rebuilt from its four most recently added members.")]
+        [Description("Comma-separated tags. Any collection, playlist, or channel carrying one of these tags will have its primary image rebuilt from its four most recently added members.")]
         [AutoPostBack("updateconfig", nameof(CycleTagString))]
         public string CycleTagString { get; set; } = "cyclepic";
+
+        public CaptionItem LibrariesHeading { get; set; } = new CaptionItem("Libraries");
+
+        [Description("Enable image cycling for individual libraries. Libraries are disabled by default.")]
+        public GenericItemList LibraryList { get; set; } = new GenericItemList();
 
         public GenericItemList ScheduledTaskLink { get; set; } = new GenericItemList();
 

@@ -40,7 +40,7 @@ namespace Emby.CycleImages
         public override string Name => "Cycle Images";
 
         public override string Description =>
-            "Rebuilds a four-poster collage image for collections and playlists based on their most recently added members.";
+            "Rebuilds collage images for collections, playlists, channels, and enabled libraries based on their most recently added members.";
 
         public override Guid Id =>
             new Guid("600FF041-1129-441F-82D9-D3943F22C7BE");
